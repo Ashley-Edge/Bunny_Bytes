@@ -4,7 +4,7 @@ import os
 import time
 
 
-quiz = {"What pasta is shaped like a small bow tie? ": "farfalle"}
+# quiz = {"What pasta is shaped like a small bow tie? ": "farfalle"}
 
 
 # def food_quiz():
@@ -35,10 +35,10 @@ pygame.init()
 pygame.mixer.init()
 
 
-start_sound = pygame.mixer.Sound('start.wav')
-new_recipe_sound = pygame.mixer.Sound('new_recipe.wav')
-duplicate_recipe_sound = pygame.mixer.Sound('duplicate_recipe.wav')
-no_recipe_sound = pygame.mixer.Sound('no_recipe.wav')
+start_sound = pygame.mixer.Sound('sound/start.wav')
+new_recipe_sound = pygame.mixer.Sound('sound/new_recipe.wav')
+duplicate_recipe_sound = pygame.mixer.Sound('sound/duplicate_recipe.wav')
+no_recipe_sound = pygame.mixer.Sound('sound/no_recipe.wav')
 
 print()
 print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━┓")
@@ -62,8 +62,9 @@ def read_existing_recipes(filename):
     if not os.path.exists(filename):
         return set()
     with open(filename, 'r') as file:
-        existing_recipes = {line.split(': ')[1].strip() for line in file if line.startswith('Recipe:')}
-    return existing_recipes
+        # Stripping any extra spaces or newline characters from the stored URLs
+        existing_urls = {line.split('URL: ')[1].strip() for line in file if line.startswith('   URL:')}
+    return existing_urls
 
 
 def format_recipe(recipe_name, recipe_url, calories_per_serving, servings, ingredients):
@@ -110,44 +111,55 @@ def get_recipes():
         time.sleep(1)
         return
 
-    existing_recipes = read_existing_recipes('recipes.txt')
+    existing_urls = read_existing_recipes('recipes.txt')
     found_recipe = False
+    new_recipe_found = False  # Flag to track if a new recipe was found
 
     with open('recipes.txt', 'a') as file:
         for num, recipe_data in enumerate(recipes[:limit]):
             recipe = recipe_data['recipe']
             recipe_name = recipe['label']
+            recipe_url = recipe['url']
             total_calories = recipe['calories']
             servings = recipe.get('yield', 1)  # Default to 1 serving if not provided
             calories_per_serving = round(total_calories / servings)  # Roundup the number
             servings = int(servings)  # Ensure servings is an integer
-            ingredients = "\n".join(f"      - {line}" for line in recipe['ingredientLines'])  # format ingredients in a list
+            ingredients_list = recipe['ingredientLines']
+            ingredients = "\n".join(f"      - {line}" for line in ingredients_list)  # format ingredients in a list
+
+            # print(f"DEBUG: Checking recipe - {recipe_name} with {calories_per_serving} calories per serving")  # Debug line
+
             if calories_per_serving <= calories_ask:
                 found_recipe = True
-                formatted_recipe = format_recipe(
-                    recipe_name, recipe['url'], calories_per_serving, servings, ingredients
-                )
-                if recipe_name in existing_recipes:
+                new_recipe_found = True
+
+                formatted_recipe = format_recipe(recipe_name, recipe_url, calories_per_serving, servings, ingredients)
+
+                if recipe_url in existing_urls:
                     print()
                     print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
                     print(f"( ^_^ )  ~ ♡  You have seen this recipe before ♡")
                     print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-                    print(formatted_recipe)  # print(recipe_check)
+                    print(formatted_recipe)
+                    # print(format_recipe(recipe_name, recipe_url, calories_per_serving, servings, ingredients))
                     duplicate_recipe_sound.play()  # Play duplicate sound
                     time.sleep(1)
                     continue
+
                 print()
                 print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━┓")
                 print(f"(˶♡_♡˶)  ~ ♡  * New Recipe! * ♡")
                 print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━━┛")
-                print(formatted_recipe)  # print(recipe_check)
-                # print(f"    * Saved to recipes.txt *")
+                print(formatted_recipe)  # Print the new recipe
                 new_recipe_sound.play()  # Play new recipe sound
                 time.sleep(1)
-                file.write(formatted_recipe)  # file.write(recipe_check)
-                print(f"** All New recipes have added to recipes.txt **")
-                print("-----------------------------------------------------------------------------------------------------------")
-                existing_recipes.add(recipe_name)
+
+                file.write(formatted_recipe)  # Write the new recipe to the file
+                existing_urls.add(recipe_url)
+
+        if new_recipe_found:
+            print("** All new recipes have been added to recipes.txt **")
+            print("-----------------------------------------------------------------------------------------------------------")
 
     if not found_recipe:
         print()
