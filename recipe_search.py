@@ -1,6 +1,73 @@
-import requests
-from dotenv import load_dotenv
+import pkg_resources
+import sys
 import os
+
+
+def dynamic_separator():
+    try:
+        terminal_width = os.get_terminal_size().columns
+    except OSError:
+        terminal_width = 80  # Default to 80 columns if the terminal size is unavailable (pycharm will use this)
+    return '-' * terminal_width
+
+
+# Check if the required dependencies are installed
+def check_dependencies():
+    with open('requirements.txt', 'r') as f:
+        requirements = f.read().splitlines()
+    
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = [req for req in requirements if req.split('==')[0].lower() not in installed]
+    
+    if missing:
+        print("\n" + dynamic_separator())
+        print("\nImportant dependencies are missing")
+        print("\nTo install missing dependencies, run:")
+        print("     pip install -r requirements.txt\n")
+        print(dynamic_separator())
+        return False
+    return True
+
+
+if not check_dependencies():
+    sys.exit(1)
+
+
+from dotenv import load_dotenv # type: ignore
+
+def check_env_file():
+    if not os.path.exists('.env'):
+        print("\n" + dynamic_separator() + "\n")
+        print("The .env file is missing.")
+        print("\nPlease create a .env file ~ `touch .env`")
+        print("\n   Sign up for a free EDAMAM account at https://developer.edamam.com/ to get your unique app ID and key.")
+        print("\n   - EDAMAM_APP_ID=your_app_id=<paste your unique app ID here>")
+        print("   - EDAMAM_APP_KEY=your_app_key=<paste your unique app key here>")
+        print("\n" + dynamic_separator() + "\n")
+        return False
+    
+    load_dotenv()
+    app_id = os.getenv('EDAMAM_APP_ID')
+    app_key = os.getenv('EDAMAM_APP_KEY')
+    
+    if not app_id or not app_key:
+        print("\n" + dynamic_separator() + "\n")
+        print("Your EDAMAM API credentials are missing from the .env file.")
+        print("\nPlease ensure your .env file contains:")
+        print("\n   - EDAMAM_APP_ID=your_app_id=<paste your unique app ID here>")
+        print("   - EDAMAM_APP_KEY=your_app_key=<paste your unique app key here>")
+        print("\nTo get these credentials, sign up for a free account at https://developer.edamam.com/")
+        print("\n" + dynamic_separator() + "\n")
+        return False
+    
+    return True
+
+# Call this function at the start of your script
+if not check_env_file():
+    exit(1)
+
+
+import requests # type: ignore
 import time
 
 
@@ -20,7 +87,7 @@ import time
 #             print(" /)  /) ~   ┏━━━━━━━━━━━━━━━━━━━━┓")
 #             print("(˶>_<˶)  ~  ♡ No dinner for you  ♡")
 #             print(" /づづ   ~   ┗━━━━━━━━━━━━━━━━━━━━┛")
-#             print("-----------------------------------------------------------------------------------------------------------")
+#             print(dynamic_separator())
 #             no_recipe_sound.play()  # Play no recipe sound
 #             time.sleep(1)
 #             return False
@@ -28,7 +95,7 @@ import time
 
 # Set environment variable to suppress the Pygame support prompt
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
-import pygame
+import pygame # type: ignore
 
 # Initialize Pygame and Pygame mixer
 pygame.init()
@@ -40,14 +107,13 @@ new_recipe_sound = pygame.mixer.Sound('sound/new_recipe.wav')
 duplicate_recipe_sound = pygame.mixer.Sound('sound/duplicate_recipe.wav')
 no_recipe_sound = pygame.mixer.Sound('sound/no_recipe.wav')
 
-print()
-print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━┓")
-print("( ^_^ ) ~  ♡   Bunny Bytes   ♡")
-print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━┛")
-print()
-# Play sound at the start of the script
-start_sound.play()
-load_dotenv()
+print(
+    "\n"
+    " /)  /)  ~ ┏━━━━━━━━━━━━━━━━━┓\n"
+    "( ^_^ ) ~  ♡   Bunny Bytes   ♡\n"
+    " /づづ   ~ ┗━━━━━━━━━━━━━━━━━┛\n"
+)
+start_sound.play() # Play sound at the start of the script
 
 
 def recipe_search(ingredient):
@@ -69,18 +135,20 @@ def read_existing_recipes(filename):
 
 def format_recipe(recipe_name, recipe_url, calories_per_serving, servings, ingredients):
     return (
-        f"\nRecipe: {recipe_name}\n"
+        "\n"
+        f"Recipe: {recipe_name}\n"
         f"   URL: {recipe_url}\n"
         f"   Calories: {calories_per_serving}\n"
         f"   Servings: {servings}\n"
+        "\n"
         f"   Ingredients:\n{ingredients}\n"
-        "-----------------------------------------------------------------------------------------------------------"  # Separator line
+        "\n"
+        + dynamic_separator() +  # Separator line
         ""
     )
 
 
 def get_recipes():
-    print()
     ingredient = input('What ingredients do you want to use?: ')
     while not ingredient:
         ingredient = input('You must enter at least one or more ingredients. Try again: ')
@@ -98,15 +166,18 @@ def get_recipes():
             limit = int(input('How many recipes do you want to see?: '))
         except ValueError:
             print("Invalid input. Please enter a valid integer for the number of recipes.")
+    print(dynamic_separator())
 
     recipes = recipe_search(ingredient)
 
     if not recipes:
-        print()
-        print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-        print(f"(˶>_<˶)  ~  ♡ No recipes found for your ingredients !!!!  ♡")
-        print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-        print("-----------------------------------------------------------------------------------------------------------")
+        print(
+            "\n"
+            f" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+            f"(˶>_<˶) ~  ♡ No recipes found for your ingredients !!!! ♡\n"
+            f" /づづ   ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n"
+        )
+        print(dynamic_separator())
         no_recipe_sound.play()  # Play no recipe sound
         time.sleep(1)
         return
@@ -131,42 +202,47 @@ def get_recipes():
 
             if calories_per_serving <= calories_ask:
                 found_recipe = True
-                new_recipe_found = True
 
                 formatted_recipe = format_recipe(recipe_name, recipe_url, calories_per_serving, servings, ingredients)
 
                 if recipe_url in existing_urls:
-                    print()
-                    print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-                    print(f"( ^_^ )  ~ ♡  You have seen this recipe before ♡")
-                    print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+                    print(
+                        "\n"
+                        f" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+                        f"( ^_^ ) ~  ♡ You have seen this recipe before ♡\n"
+                        f" /づづ   ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"                    
+                    )
                     print(formatted_recipe)
-                    # print(format_recipe(recipe_name, recipe_url, calories_per_serving, servings, ingredients))
                     duplicate_recipe_sound.play()  # Play duplicate sound
                     time.sleep(1)
                     continue
 
-                print()
-                print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━┓")
-                print(f"(˶♡_♡˶)  ~ ♡  * New Recipe! * ♡")
-                print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━━┛")
+                print(
+                    "\n"
+                    f" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━┓\n"
+                    f"(˶♡_♡˶) ~  ♡ * New Recipe! * ♡\n"
+                    f" /づづ   ~ ┗━━━━━━━━━━━━━━━━━┛"
+                )
                 print(formatted_recipe)  # Print the new recipe
                 new_recipe_sound.play()  # Play new recipe sound
                 time.sleep(1)
 
                 file.write(formatted_recipe)  # Write the new recipe to the file
                 existing_urls.add(recipe_url)
+                new_recipe_found = True
 
         if new_recipe_found:
             print("** All new recipes have been added to recipes.txt **")
-            print("-----------------------------------------------------------------------------------------------------------")
+            print(dynamic_separator())
 
     if not found_recipe:
-        print()
-        print(" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-        print(f"(˶>_<˶) ~ ♡  No recipes under {calories_ask} calories are available !!!! ♡")
-        print(" /づづ    ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-        print("-----------------------------------------------------------------------------------------------------------")
+        print(
+            "\n"
+            f" /)  /)  ~ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+            f"(˶>_<˶) ~  ♡ No recipes under {calories_ask} calories are available !!!! ♡\n"
+            f" /づづ   ~ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n"
+        )
+        print(dynamic_separator())
         no_recipe_sound.play()  # Play no recipe sound
         time.sleep(1)
 
@@ -175,4 +251,4 @@ def get_recipes():
 #     get_recipes()
 get_recipes()
 print("♡ Developed Ashley Edge. Special thanks to my GCHQ EDAMAM-team3, where we initially developed this app 2024 ♡")
-print("-----------------------------------------------------------------------------------------------------------")
+print(dynamic_separator())
